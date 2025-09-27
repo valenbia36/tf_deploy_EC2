@@ -1,33 +1,39 @@
 terraform {
   required_providers {
     aws = {
-        source = "hashicorp/aws"
-        version = "~> 5.0"
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
     }
   }
   required_version = ">=1.4.0"
 }
-
 provider "aws" {
-  region = "var.region"
+  region = var.region_EC2
 }
-resource "aws_security_group" "ssh_http" {
-    name = "sg_vb"
-    description = "Allow SSH and HTTP"
-    ingress {
-        from_port = 22
-        to_port = 22
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+data "aws_vpc" "default" {
+  default = true
+}
 
-    ingress = {
-        from_port = 80
-        to_port = 80
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-    egress {
+resource "aws_security_group" "ssh_http" {
+  name        = "sg_vb"
+  description = "Allow SSH and HTTP"
+  vpc_id      = data.aws_vpc.default.id  
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -35,10 +41,10 @@ resource "aws_security_group" "ssh_http" {
   }
 }
 resource "aws_instance" "vb_ec2" {
-    ami = data.aws_ami.amazon_linux2.id
-    instance_type = "t2.micro"
-    security_groups = [aws_security_group.ssh_http.name]
-    tags = {
-        name = "EC2 instance by VB"
-    }
+  ami                    = "ami-005efd5afe550784a"  
+  instance_type           = "t3.micro"              
+  vpc_security_group_ids  = [aws_security_group.ssh_http.id] 
+  tags = {
+    Name = "EC2 instance by VB"
+  }
 }
